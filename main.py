@@ -149,285 +149,31 @@ def process_role(update: Update, context: CallbackContext) -> int:
         )
         return ConversationHandler.END
 
-def process_profile_age(update: Update, context: CallbackContext) -> int:
-    """
-    Process user's age input and ask for gender.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    try:
-        age = int(update.message.text)
-        if age < 5 or age > 100:
-            update.message.reply_text(
-                "Por favor, digite uma idade válida entre 5 e 100 anos."
-            )
-            return PROFILE_AGE
-    except ValueError:
-        update.message.reply_text(
-            "Por favor, digite apenas números para sua idade."
-        )
-        return PROFILE_AGE
-    
-    # Store in context for later database update
-    context.user_data['profile_age'] = age
-    
-    # Ask for gender
-    keyboard = [
-        [InlineKeyboardButton("Masculino", callback_data='masculino')],
-        [InlineKeyboardButton("Feminino", callback_data='feminino')],
-        [InlineKeyboardButton("Não-binário", callback_data='nao-binario')],
-        [InlineKeyboardButton("Prefiro não informar", callback_data='nao-informado')]
-    ]
-    
-    update.message.reply_text(
-        "Obrigado! Qual é o seu gênero?",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-    return PROFILE_GENDER
+# Importar os módulos adicionais
+from user_profile import (
+    process_profile_age, process_profile_gender, process_profile_contacts,
+    process_profile_academic, process_profile_professionals, process_profile_interests,
+    process_profile_triggers, process_profile_communication, update_profile_command
+)
 
-def process_profile_gender(update: Update, context: CallbackContext) -> int:
-    """
-    Process user's gender selection and ask for emergency contacts.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    query = update.callback_query
-    query.answer()
-    
-    gender = query.data
-    context.user_data['profile_gender'] = gender
-    
-    query.edit_message_text(
-        "Obrigado! Agora, por favor, forneça contatos de emergência (pais, responsáveis ou cuidadores).\n\n"
-        "Digite no formato: Nome - Relação - Telefone\n"
-        "Exemplo: Maria Silva - Mãe - (11) 98765-4321\n\n"
-        "Você pode adicionar múltiplos contatos, um por linha."
-    )
-    return PROFILE_CONTACTS
+from group_management import (
+    list_groups, join_group_callback, create_group_start, process_group_name,
+    process_group_theme, process_group_desc, process_group_max, toggle_ai_mediator
+)
 
-def process_profile_contacts(update: Update, context: CallbackContext) -> int:
-    """
-    Process user's emergency contacts and ask for academic history.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    contacts_text = update.message.text
-    contacts = [contact.strip() for contact in contacts_text.split('\n') if contact.strip()]
-    context.user_data['profile_contacts'] = contacts
-    
-    update.message.reply_text(
-        "Obrigado! Agora, conte-nos brevemente sobre seu histórico acadêmico.\n"
-        "Por exemplo: escolas que frequentou, nível de escolaridade, etc."
-    )
-    return PROFILE_ACADEMIC
+from activity_management import (
+    list_activities, start_activity_command, process_activity_group,
+    process_activity_type, process_activity_title, process_activity_desc,
+    process_activity_duration, toggle_ai_guidance
+)
 
-def process_profile_academic(update: Update, context: CallbackContext) -> int:
-    """
-    Process user's academic history and ask for professionals.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    academic_history = update.message.text
-    context.user_data['profile_academic'] = academic_history
-    
-    update.message.reply_text(
-        "Obrigado! Agora, por favor, liste os profissionais com quem você já trabalhou "
-        "ou trabalha atualmente (terapeutas, psicólogos, etc.).\n\n"
-        "Digite no formato: Nome - Especialidade\n"
-        "Exemplo: Dr. João - Psicólogo\n\n"
-        "Você pode adicionar múltiplos profissionais, um por linha."
-    )
-    return PROFILE_PROFESSIONALS
+from ai_mediation import (
+    handle_group_message, handle_private_message, should_ai_intervene, needs_support
+)
 
-def process_profile_professionals(update: Update, context: CallbackContext) -> int:
+def help_command(update: Update, context: CallbackContext) -> None:
     """
-    Process user's professionals and ask for interests.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    professionals_text = update.message.text
-    professionals = [prof.strip() for prof in professionals_text.split('\n') if prof.strip()]
-    context.user_data['profile_professionals'] = professionals
-    
-    update.message.reply_text(
-        "Obrigado! Agora, conte-nos sobre seus interesses especiais, hobbies ou tópicos favoritos.\n"
-        "Isso nos ajudará a sugerir grupos e atividades relevantes para você.\n\n"
-        "Por favor, liste seus interesses separados por vírgulas."
-    )
-    return PROFILE_INTERESTS
-
-def process_profile_interests(update: Update, context: CallbackContext) -> int:
-    """
-    Process user's interests and ask for anxiety triggers.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    interests_text = update.message.text
-    interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
-    context.user_data['profile_interests'] = interests
-    
-    update.message.reply_text(
-        "Obrigado! Para nos ajudar a criar um ambiente confortável, "
-        "poderia nos informar sobre gatilhos conhecidos de ansiedade ou desconforto?\n\n"
-        "Por exemplo: barulhos altos, interrupções frequentes, certos tópicos, etc.\n"
-        "Por favor, liste-os separados por vírgulas."
-    )
-    return PROFILE_TRIGGERS
-
-def process_profile_triggers(update: Update, context: CallbackContext) -> int:
-    """
-    Process user's anxiety triggers and ask for communication preferences.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    triggers_text = update.message.text
-    triggers = [trigger.strip() for trigger in triggers_text.split(',') if trigger.strip()]
-    context.user_data['profile_triggers'] = triggers
-    
-    # Ask for communication preferences
-    keyboard = [
-        [InlineKeyboardButton("Direta e objetiva", callback_data='direta')],
-        [InlineKeyboardButton("Detalhada e explicativa", callback_data='detalhada')]
-    ]
-    
-    update.message.reply_text(
-        "Quase terminando! Como você prefere que nos comuniquemos com você?",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-    return PROFILE_COMMUNICATION
-
-def process_profile_communication(update: Update, context: CallbackContext) -> int:
-    """
-    Process user's communication preferences and complete profile setup.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    query = update.callback_query
-    query.answer()
-    
-    comm_style = query.data
-    context.user_data['profile_communication'] = comm_style
-    
-    user_id = update.effective_user.id
-    
-    # Update user profile in database
-    profile_data = {
-        "age": context.user_data.get('profile_age'),
-        "gender": context.user_data.get('profile_gender'),
-        "emergency_contacts": context.user_data.get('profile_contacts', []),
-        "academic_history": context.user_data.get('profile_academic', ''),
-        "professionals": context.user_data.get('profile_professionals', []),
-        "interests": context.user_data.get('profile_interests', []),
-        "anxiety_triggers": context.user_data.get('profile_triggers', []),
-        "communication_preferences": {
-            "style": context.user_data.get('profile_communication', 'direta')
-        }
-    }
-    
-    success = db.update_user_profile(user_id, profile_data)
-    
-    if success:
-        query.edit_message_text(
-            f"Perfil completo criado com sucesso!\n\n"
-            f"Agora você pode:\n"
-            f"• Ver grupos disponíveis com /grupos\n"
-            f"• Ver atividades programadas com /atividades\n\n"
-            f"Nossos agentes de IA estão disponíveis 24/7 para ajudar nas interações "
-            f"e oferecer suporte quando necessário. Se precisar de ajuda individual, "
-            f"você pode iniciar uma conversa privada a qualquer momento."
-        )
-    else:
-        query.edit_message_text(
-            "Desculpe, ocorreu um erro ao salvar seu perfil completo. "
-            "No entanto, seu perfil básico foi criado e você pode começar a usar o bot. "
-            "Você pode atualizar seu perfil mais tarde com o comando /perfil."
-        )
-    
-    return ConversationHandler.END
-
-def update_profile_command(update: Update, context: CallbackContext) -> int:
-    """
-    Command to update user profile.
-    
-    Args:
-        update: Update object from Telegram
-        context: CallbackContext object from Telegram
-        
-    Returns:
-        int: Next conversation state
-    """
-    user_id = update.effective_user.id
-    user = db.get_user(user_id)
-    
-    if not user:
-        update.message.reply_text(
-            "Você precisa se registrar primeiro. Use /start para criar seu perfil."
-        )
-        return ConversationHandler.END
-    
-    # For autistic users, offer profile update options
-    if user.get('role') == 'autista':
-        keyboard = [
-            [InlineKeyboardButton("Interesses", callback_data='update_interests')],
-            [InlineKeyboardButton("Gatilhos de ansiedade", callback_data='update_triggers')],
-            [InlineKeyboardButton("Preferências de comunicação", callback_data='update_communication')],
-            [InlineKeyboardButton("Contatos de emergência", callback_data='update_contacts')]
-        ]
-        
-        update.message.reply_text(
-            f"Olá, {user['name']}! O que você gostaria de atualizar em seu perfil?",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        return PROFILE_INTERESTS
-    else:
-        update.message.reply_text(
-            f"Olá, {user['name']}! Como AT, seu perfil é mais simples e não requer atualizações adicionais."
-        )
-        return ConversationHandler.END
-
-def list_groups(update: Update, context: CallbackContext) -> None:
-    """
-    List all available thematic groups.
+    Display help information about available commands.
     
     Args:
         update: Update object from Telegram
@@ -436,23 +182,189 @@ def list_groups(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
     db.update_last_active(user_id)
     
-    groups = db.get_all_groups()
+    user = db.get_user(user_id)
     
-    if not groups:
+    if not user:
+        # Basic help for unregistered users
         update.message.reply_text(
-            "Não há grupos disponíveis no momento.\n\n"
-            "Se você é um AT, pode criar um novo grupo com /criar_grupo."
+            "🤖 *AutiConnect Bot - Ajuda*\n\n"
+            "Este bot ajuda pessoas autistas a interagirem em um ambiente seguro e estruturado, "
+            "com mediação de agentes de IA disponíveis 24/7.\n\n"
+            "*Comandos disponíveis:*\n"
+            "/start - Iniciar o bot e criar seu perfil\n"
+            "/ajuda - Mostrar esta mensagem de ajuda\n\n"
+            "Por favor, use /start para criar seu perfil primeiro.",
+            parse_mode=ParseMode.MARKDOWN
         )
         return
     
-    message = "📋 *Grupos Disponíveis:*\n\n"
+    # Help message based on user role
+    if user.get('role') == 'at':
+        # Help for ATs
+        update.message.reply_text(
+            "🤖 *AutiConnect Bot - Ajuda para ATs*\n\n"
+            "*Comandos disponíveis:*\n"
+            "/start - Iniciar o bot\n"
+            "/ajuda - Mostrar esta mensagem de ajuda\n"
+            "/grupos - Listar grupos disponíveis\n"
+            "/atividades - Ver atividades programadas\n"
+            "/criar_grupo - Criar um novo grupo temático\n"
+            "/iniciar_atividade - Iniciar uma atividade estruturada\n\n"
+            "Como AT, você supervisiona os agentes de IA e intervém quando necessário. "
+            "Você receberá alertas quando situações potencialmente problemáticas "
+            "forem detectadas pelos agentes de IA.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+    else:
+        # Help for autistic users
+        update.message.reply_text(
+            "🤖 *AutiConnect Bot - Ajuda*\n\n"
+            "*Comandos disponíveis:*\n"
+            "/start - Iniciar o bot\n"
+            "/ajuda - Mostrar esta mensagem de ajuda\n"
+            "/grupos - Listar grupos disponíveis\n"
+            "/atividades - Ver atividades programadas\n"
+            "/perfil - Atualizar seu perfil\n\n"
+            "Você pode conversar diretamente com o assistente de IA a qualquer momento "
+            "para obter suporte individual. Os agentes de IA também estão presentes nos "
+            "grupos para facilitar conversas e atividades.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+
+def cancel(update: Update, context: CallbackContext) -> int:
+    """
+    Cancel current conversation.
     
-    for group in groups:
-        members_count = len(group.get('members', []))
-        max_members = group.get('max_members', 10)
+    Args:
+        update: Update object from Telegram
+        context: CallbackContext object from Telegram
         
-        # Get AT name
-        at_id = group.get('created_by')
-        at = db.get_user(at_id)
-        at_name = a
-(Content truncated due to size limit. Use line ranges to read in chunks)
+    Returns:
+        int: ConversationHandler.END
+    """
+    update.message.reply_text(
+        "Operação cancelada. O que você gostaria de fazer agora?\n\n"
+        "Use /grupos para ver grupos disponíveis\n"
+        "Use /atividades para ver atividades programadas"
+    )
+    return ConversationHandler.END
+
+def error_handler(update: Update, context: CallbackContext) -> None:
+    """
+    Handle errors in the dispatcher.
+    
+    Args:
+        update: Update object from Telegram
+        context: CallbackContext object from Telegram
+    """
+    logger.error(f"Update {update} caused error {context.error}")
+    
+    # Send message to user
+    if update and update.effective_message:
+        update.effective_message.reply_text(
+            "Desculpe, ocorreu um erro ao processar seu comando. "
+            "Por favor, tente novamente mais tarde."
+        )
+
+def main() -> None:
+    """Start the bot."""
+    # Get bot token from environment variable
+    token = os.environ.get('BOT_TOKEN')
+    if not token:
+        logger.error("BOT_TOKEN environment variable not set")
+        return
+    
+    # Create the Updater
+    updater = Updater(token)
+    
+    # Get the dispatcher
+    dispatcher = updater.dispatcher
+    
+    # Registration conversation handler
+    registration_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            NAME: [MessageHandler(Filters.text & ~Filters.command, process_name)],
+            ROLE: [CallbackQueryHandler(process_role)],
+            PROFILE_AGE: [MessageHandler(Filters.text & ~Filters.command, process_profile_age)],
+            PROFILE_GENDER: [CallbackQueryHandler(process_profile_gender)],
+            PROFILE_CONTACTS: [MessageHandler(Filters.text & ~Filters.command, process_profile_contacts)],
+            PROFILE_ACADEMIC: [MessageHandler(Filters.text & ~Filters.command, process_profile_academic)],
+            PROFILE_PROFESSIONALS: [MessageHandler(Filters.text & ~Filters.command, process_profile_professionals)],
+            PROFILE_INTERESTS: [MessageHandler(Filters.text & ~Filters.command, process_profile_interests)],
+            PROFILE_TRIGGERS: [MessageHandler(Filters.text & ~Filters.command, process_profile_triggers)],
+            PROFILE_COMMUNICATION: [CallbackQueryHandler(process_profile_communication)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+    
+    # Profile update conversation handler
+    profile_update_handler = ConversationHandler(
+        entry_points=[CommandHandler('perfil', update_profile_command)],
+        states={
+            PROFILE_INTERESTS: [CallbackQueryHandler(lambda u, c: PROFILE_INTERESTS)],
+            # Additional states would be implemented in a full version
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+    
+    # Group creation conversation handler
+    group_creation_handler = ConversationHandler(
+        entry_points=[CommandHandler('criar_grupo', create_group_start)],
+        states={
+            GROUP_NAME: [MessageHandler(Filters.text & ~Filters.command, process_group_name)],
+            GROUP_THEME: [MessageHandler(Filters.text & ~Filters.command, process_group_theme)],
+            GROUP_DESC: [MessageHandler(Filters.text & ~Filters.command, process_group_desc)],
+            GROUP_MAX: [MessageHandler(Filters.text & ~Filters.command, process_group_max)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+    
+    # Activity creation conversation handler
+    activity_creation_handler = ConversationHandler(
+        entry_points=[CommandHandler('iniciar_atividade', start_activity_command)],
+        states={
+            ACTIVITY_TYPE: [CallbackQueryHandler(process_activity_group, pattern=r'^group_')],
+            ACTIVITY_TITLE: [CallbackQueryHandler(process_activity_type, pattern=r'^type_')],
+            ACTIVITY_DESC: [MessageHandler(Filters.text & ~Filters.command, process_activity_title)],
+            ACTIVITY_DURATION: [MessageHandler(Filters.text & ~Filters.command, process_activity_desc)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+    
+    # Add handlers to dispatcher
+    dispatcher.add_handler(registration_handler)
+    dispatcher.add_handler(profile_update_handler)
+    dispatcher.add_handler(group_creation_handler)
+    dispatcher.add_handler(activity_creation_handler)
+    dispatcher.add_handler(CommandHandler('grupos', list_groups))
+    dispatcher.add_handler(CommandHandler('atividades', list_activities))
+    dispatcher.add_handler(CommandHandler('ajuda', help_command))
+    
+    # Callback query handlers
+    dispatcher.add_handler(CallbackQueryHandler(join_group_callback, pattern=r'^join_'))
+    dispatcher.add_handler(CallbackQueryHandler(toggle_ai_mediator, pattern=r'^ai_(on|off)_'))
+    dispatcher.add_handler(CallbackQueryHandler(toggle_ai_guidance, pattern=r'^ai_guide_(on|off)_'))
+    
+    # Message handlers
+    dispatcher.add_handler(MessageHandler(
+        Filters.text & ~Filters.command & Filters.chat_type.groups, 
+        handle_group_message
+    ))
+    dispatcher.add_handler(MessageHandler(
+        Filters.text & ~Filters.command & Filters.chat_type.private, 
+        handle_private_message
+    ))
+    
+    # Add error handler
+    dispatcher.add_error_handler(error_handler)
+    
+    # Start the Bot
+    updater.start_polling()
+    logger.info("Bot started with AI mediators enabled")
+    
+    # Run the bot until the user presses Ctrl-C
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
