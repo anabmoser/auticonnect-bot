@@ -1,0 +1,38 @@
+Create a fully functional Telegram bot using the python-telegram-bot library (version 13 or above).
+The bot is designed for people with autism and Therapeutic Aides (ATs), so it must be simple, predictable, and easy to understand.
+Use Python 3 and structure the code in a clean and beginner-friendly way.
+
+The bot should support the following commands:
+
+/start: Start the conversation and register the user profile (store name, Telegram ID, and role: autistic or AT).
+
+/grupos: List all available theme-based groups.
+
+/atividades: Show upcoming structured activities for the user's group.
+
+/criar_grupo (ATs only): Create a new thematic group.
+
+/iniciar_atividade (ATs only): Start a structured activity in a group.
+
+Technical requirements:
+
+Code in Python 3, organized into simple files like main.py, db.py, etc.
+
+Use MongoDB to store data, via the pymongo library.
+
+Use environment variables like <BOT_TOKEN> and <MONGO_URI> in the code, not hardcoded secrets.
+
+Create a requirements.txt with all needed packages.
+
+Generate a Procfile for easy deployment on Railway (or optionally Replit).
+
+Add simple and clear comments to explain what each part of the code does.
+
+Important:
+
+Do not include any dummy credentials or API keys.
+
+Use <BOT_TOKEN> and <MONGO_URI> as placeholders only.
+
+After generating the code, explain clearly (in English, for non-technical users) how to deploy this project to Railway or Replit without using a terminal or command line.
+Use simple, step-by-step language that any beginner can follow.
